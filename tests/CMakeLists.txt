@@ -13,6 +13,7 @@ endif()
 include(GoogleTest)
 
 add_executable(bank_tests
+  MoneyTest.cpp
   VersionTest.cpp
 )
 target_link_libraries(bank_tests PRIVATE bank_core GTest::gtest_main)
