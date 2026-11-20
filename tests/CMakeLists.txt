@@ -13,6 +13,7 @@ endif()
 include(GoogleTest)
 
 add_executable(bank_tests
+  AccountTest.cpp
   MoneyTest.cpp
   VersionTest.cpp
 )

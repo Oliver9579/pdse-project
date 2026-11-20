@@ -1,5 +1,7 @@
 # Core library with all the domain logic, used by the demo app and the tests.
 add_library(bank_core STATIC
+  bank/Account.cpp
+  bank/AccountFactory.cpp
   bank/Money.cpp
   bank/Version.cpp
 )
