@@ -4,6 +4,7 @@
 
 #include <string>
 
+#include "bank/AccountState.hpp"
 #include "bank/Money.hpp"
 
 namespace bank {
@@ -15,9 +16,10 @@ std::string toString(AccountType type);
 
 /// \brief Base class of all accounts.
 ///
-/// Holds what every account has (id, owner, balance) and the rules shared by
-/// all of them; subclasses only decide how much money is available for a
-/// withdrawal (availableFunds()).
+/// Holds what every account has (id, owner, balance, state); subclasses only
+/// decide how much money is available for a withdrawal (availableFunds()).
+/// What is allowed at all (deposit, withdraw, freeze, ...) is decided by the
+/// current AccountState, to which every operation is forwarded.
 class Account {
  public:
   Account(std::string id, std::string owner);
@@ -36,16 +38,31 @@ class Account {
   /// The most that can be withdrawn right now.
   virtual Money availableFunds() const = 0;
 
-  /// Adds money. Throws InvalidAmount if amount <= 0.
+  /// Adds money. Throws InvalidAmount if amount <= 0, InvalidOperation if
+  /// the state does not allow deposits (closed).
   void deposit(Money amount);
-  /// Takes money out. Throws InvalidAmount if amount <= 0 and
-  /// InsufficientFunds if amount > availableFunds().
+  /// Takes money out. Throws InvalidAmount if amount <= 0, InsufficientFunds
+  /// if amount > availableFunds(), InvalidOperation if frozen or closed.
   void withdraw(Money amount);
 
+  /// Blocks withdrawals (e.g. suspected fraud). Only from active.
+  void freeze();
+  /// Lifts a freeze. Only from frozen.
+  void unfreeze();
+  /// Closes the account for good. Only with a zero balance.
+  void close();
+
+  const AccountState& state() const { return *state_; }
+  /// "active", "frozen" or "closed".
+  std::string stateName() const { return state_->name(); }
+
  private:
+  friend class AccountState;  // states change balance_ and state_
+
   std::string id_;
   std::string owner_;
   Money balance_;
+  const AccountState* state_ = &ActiveState::instance();
 };
 
 /// \brief Everyday account that may go below zero, down to an overdraft limit.

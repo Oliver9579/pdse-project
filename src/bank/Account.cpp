@@ -21,19 +21,19 @@ void Account::deposit(Money amount) {
   if (!amount.isPositive()) {
     throw InvalidAmount("Deposit amount must be positive, got " + amount.toString());
   }
-  balance_ += amount;
+  state_->deposit(*this, amount);
 }
 
 void Account::withdraw(Money amount) {
   if (!amount.isPositive()) {
     throw InvalidAmount("Withdrawal amount must be positive, got " + amount.toString());
   }
-  if (amount > availableFunds()) {
-    throw InsufficientFunds("Cannot withdraw " + amount.toString() + " from " + id_ +
-                            ": only " + availableFunds().toString() + " available");
-  }
-  balance_ -= amount;
+  state_->withdraw(*this, amount);
 }
+
+void Account::freeze() { state_->freeze(*this); }
+void Account::unfreeze() { state_->unfreeze(*this); }
+void Account::close() { state_->close(*this); }
 
 CheckingAccount::CheckingAccount(std::string id, std::string owner, Money overdraftLimit)
     : Account(std::move(id), std::move(owner)), overdraftLimit_(overdraftLimit) {

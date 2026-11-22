@@ -2,6 +2,7 @@
 add_library(bank_core STATIC
   bank/Account.cpp
   bank/AccountFactory.cpp
+  bank/AccountState.cpp
   bank/Money.cpp
   bank/Version.cpp
 )
