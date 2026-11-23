@@ -16,6 +16,7 @@ add_executable(bank_tests
   AccountStateTest.cpp
   AccountTest.cpp
   MoneyTest.cpp
+  ObserverTest.cpp
   VersionTest.cpp
 )
 target_link_libraries(bank_tests PRIVATE bank_core GTest::gtest_main)

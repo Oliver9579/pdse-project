@@ -2,8 +2,11 @@
 /// \brief Bank accounts: the common base class and the two account types.
 #pragma once
 
+#include <memory>
 #include <string>
+#include <vector>
 
+#include "bank/AccountObserver.hpp"
 #include "bank/AccountState.hpp"
 #include "bank/Money.hpp"
 
@@ -56,13 +59,22 @@ class Account {
   /// "active", "frozen" or "closed".
   std::string stateName() const { return state_->name(); }
 
+  /// Registers an observer. The account only keeps a weak reference: it does
+  /// not keep observers alive, and destroyed observers are skipped.
+  void addObserver(const std::shared_ptr<AccountObserver>& observer);
+  void removeObserver(const std::shared_ptr<AccountObserver>& observer);
+  std::size_t observerCount() const;
+
  private:
+  void notify(EventType type, Money amount, const std::string& detail = {});
+
   friend class AccountState;  // states change balance_ and state_
 
   std::string id_;
   std::string owner_;
   Money balance_;
   const AccountState* state_ = &ActiveState::instance();
+  std::vector<std::weak_ptr<AccountObserver>> observers_;
 };
 
 /// \brief Everyday account that may go below zero, down to an overdraft limit.

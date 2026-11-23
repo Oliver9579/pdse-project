@@ -1,5 +1,6 @@
 #include "bank/Account.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <utility>
 
@@ -22,6 +23,7 @@ void Account::deposit(Money amount) {
     throw InvalidAmount("Deposit amount must be positive, got " + amount.toString());
   }
   state_->deposit(*this, amount);
+  notify(EventType::Deposit, amount);
 }
 
 void Account::withdraw(Money amount) {
@@ -29,11 +31,58 @@ void Account::withdraw(Money amount) {
     throw InvalidAmount("Withdrawal amount must be positive, got " + amount.toString());
   }
   state_->withdraw(*this, amount);
+  notify(EventType::Withdrawal, amount);
 }
 
-void Account::freeze() { state_->freeze(*this); }
-void Account::unfreeze() { state_->unfreeze(*this); }
-void Account::close() { state_->close(*this); }
+void Account::freeze() {
+  const auto before = stateName();
+  state_->freeze(*this);
+  notify(EventType::StateChanged, Money(), before + " -> " + stateName());
+}
+
+void Account::unfreeze() {
+  const auto before = stateName();
+  state_->unfreeze(*this);
+  notify(EventType::StateChanged, Money(), before + " -> " + stateName());
+}
+
+void Account::close() {
+  const auto before = stateName();
+  state_->close(*this);
+  notify(EventType::StateChanged, Money(), before + " -> " + stateName());
+}
+
+void Account::addObserver(const std::shared_ptr<AccountObserver>& observer) {
+  if (observer) {
+    observers_.push_back(observer);
+  }
+}
+
+void Account::removeObserver(const std::shared_ptr<AccountObserver>& observer) {
+  observers_.erase(std::remove_if(observers_.begin(), observers_.end(),
+                                  [&observer](const std::weak_ptr<AccountObserver>& w) {
+                                    const auto o = w.lock();
+                                    return !o || o == observer;
+                                  }),
+                   observers_.end());
+}
+
+std::size_t Account::observerCount() const {
+  return static_cast<std::size_t>(
+      std::count_if(observers_.begin(), observers_.end(),
+                    [](const std::weak_ptr<AccountObserver>& w) { return !w.expired(); }));
+}
+
+void Account::notify(EventType type, Money amount, const std::string& detail) {
+  const AccountEvent event{type, id_, amount, balance_, detail};
+  // copy first: an observer may add/remove observers while being notified
+  const auto observers = observers_;
+  for (const auto& weak : observers) {
+    if (const auto observer = weak.lock()) {
+      observer->onEvent(event);
+    }
+  }
+}
 
 CheckingAccount::CheckingAccount(std::string id, std::string owner, Money overdraftLimit)
     : Account(std::move(id), std::move(owner)), overdraftLimit_(overdraftLimit) {
