@@ -15,6 +15,7 @@ include(GoogleTest)
 add_executable(bank_tests
   AccountStateTest.cpp
   AccountTest.cpp
+  BankTest.cpp
   CommandTest.cpp
   MoneyTest.cpp
   ObserverTest.cpp

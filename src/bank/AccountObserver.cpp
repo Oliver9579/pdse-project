@@ -41,9 +41,13 @@ void StatementRecorder::printStatement(std::ostream& out, const std::string& acc
     }
     const std::string amount = e.type == EventType::Withdrawal ? "-" + e.amount.toString()
                                : e.type == EventType::Deposit  ? "+" + e.amount.toString()
-                                                               : e.detail;
+                                                               : "";
     out << std::left << std::setw(14) << toString(e.type) << std::right << std::setw(12)
-        << amount << std::setw(12) << e.balanceAfter.toString() << '\n';
+        << amount << std::setw(12) << e.balanceAfter.toString();
+    if (!e.detail.empty()) {
+      out << "  (" << e.detail << ')';
+    }
+    out << '\n';
   }
 }
 
