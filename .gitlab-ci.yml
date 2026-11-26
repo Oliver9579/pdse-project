@@ -1,0 +1,33 @@
+# GitLab CI: build and test every push / merge request.
+image: ubuntu:24.04
+
+variables:
+  DEBIAN_FRONTEND: noninteractive
+
+before_script:
+  - apt-get update -qq
+  - apt-get install -y -qq g++ cmake ninja-build git lcov
+
+stages:
+  - build-and-test
+  - coverage
+
+build-and-test:
+  stage: build-and-test
+  script:
+    - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    - cmake --build build
+    - ctest --test-dir build --output-on-failure
+    - ./build/app/bank_demo
+
+coverage:
+  stage: coverage
+  script:
+    - cmake -S . -B build-cov -G Ninja -DBANK_ENABLE_COVERAGE=ON
+    - cmake --build build-cov
+    - cmake --build build-cov --target coverage
+  coverage: '/lines\.*: (\d+\.\d+)%/'
+  artifacts:
+    paths:
+      - build-cov/coverage/
+    expire_in: 1 week
